@@ -230,7 +230,7 @@ class _ResultScreenState extends State<ResultScreen> {
 
   void logout() async {
     //await FirebaseAuth.instance.signOut();
-    await oauth.logout();
+    //await oauth.logout();
     showMessage('Logged out', context);
   }
 }

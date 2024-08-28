@@ -18,15 +18,5 @@ void showMessage(String text,BuildContext context) {
 void showSnackBar(BuildContext context, String text) =>
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 
- final Config config = Config(
-  tenant: '',
-  clientId: '',
-  scope: '',
-  clientSecret: "",
-  navigatorKey: navigatorKey,
-  loader: SizedBox(),
-  domainHint:"consumers",
 
-);
-
-final AadOAuth oauth = AadOAuth(config);
+//final AadOAuth oauth = AadOAuth(config);
