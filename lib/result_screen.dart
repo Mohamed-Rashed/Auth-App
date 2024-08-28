@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:add_to_google_wallet/widgets/add_to_google_wallet_button.dart';
 import 'package:add_to_wallet/widgets/add_to_wallet_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:microsoft_graph_api/models/user/user_model.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -10,6 +11,9 @@ import 'package:untitled5/helper.dart';
 import 'package:untitled5/pass.dart';
 import 'package:untitled5/pass_provider.dart';
 import 'package:uuid/uuid.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:crypto/crypto.dart';
 
 final String _passId = const Uuid().v4();
 const String _passClass = '1234567890';
@@ -31,7 +35,50 @@ class _ResultScreenState extends State<ResultScreen> {
   @override
   void initState() {
     super.initState();
-    //initPlatformState();
+    generateManifest();
+  }
+
+  Future<void> generateManifest() async {
+    final assetDirectoryPath = 'assets/passes';
+
+    // Get the list of files in the assets/passes directory
+    final manifest = <String, String>{};
+
+    // List of files to include in the manifest
+    final fileNames = [
+      'pass.json',
+      'background.png',
+      'background@2x.png',
+      'icon.png',
+      'icon@2x.png',
+      'logo.png',
+      'logo@2x.png',
+      // Add other filenames as needed
+    ];
+
+    for (var fileName in fileNames) {
+      // Load the file from assets
+      final fileBytes = await rootBundle.load('$assetDirectoryPath/$fileName');
+
+      // Calculate the SHA-1 hash of the file
+      final sha1Hash = sha1.convert(fileBytes.buffer.asUint8List()).toString();
+
+      // Add the hash to the manifest
+      manifest[fileName] = sha1Hash;
+    }
+
+    // Convert the manifest to a JSON string
+    final manifestJson = jsonEncode(manifest);
+
+    // Write the manifest.json file to the local filesystem
+    // Get the local documents directory
+    final directory = await getApplicationDocumentsDirectory();
+
+    // Write the manifest.json file to the local documents directory
+    final manifestFile = File('${directory.path}/manifest.json');
+    await manifestFile.writeAsString(manifestJson, flush: true);
+
+    print('manifest.json generated successfully in ${directory.path}.');
   }
 
   Future<void> initPlatformState() async {
@@ -45,8 +92,6 @@ class _ResultScreenState extends State<ResultScreen> {
     });
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,7 +99,8 @@ class _ResultScreenState extends State<ResultScreen> {
       body: Column(
         children: <Widget>[
           Container(
-            margin: const EdgeInsets.only(left: 30, top: 100, right: 30, bottom: 70),
+            margin: const EdgeInsets.only(
+                left: 30, top: 100, right: 30, bottom: 70),
             height: 350,
             width: 400,
             padding: const EdgeInsets.symmetric(horizontal: 30),
@@ -182,7 +228,17 @@ class _ResultScreenState extends State<ResultScreen> {
           const SizedBox(
             height: 20,
           ),
-          InkWell(
+          if (_passLoaded)
+            AddToWalletButton(
+              pkPass: _pkPassData,
+              width: 150,
+              height: 30,
+              unsupportedPlatformChild: DownloadPass(pkPass: _pkPassData),
+              onPressed: () {
+                print("🎊Add to Wallet button Pressed!🎊");
+              },
+            ),
+          /*InkWell(
             onTap: () {
               generateWalletPassFromPath();
             },
@@ -200,7 +256,7 @@ class _ResultScreenState extends State<ResultScreen> {
                 ),
               ),
             ),
-          ),
+          ),*/
           const SizedBox(
             height: 20,
           ),
@@ -234,6 +290,7 @@ class _ResultScreenState extends State<ResultScreen> {
     showMessage('Logged out', context);
   }
 }
+
 class DownloadPass extends StatelessWidget {
   final List<int> pkPass;
 
@@ -245,7 +302,8 @@ class DownloadPass extends StatelessWidget {
   }
 
   void _onPressed() async {
-    print("The button was pressed, we could let the user download the pass for instance!");
+    print(
+        "The button was pressed, we could let the user download the pass for instance!");
     File passFile = await writePassFile();
     Share.shareFiles([passFile.path], text: "Here is your pkPass!");
   }

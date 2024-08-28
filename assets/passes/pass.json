@@ -1,0 +1,95 @@
+{
+    "formatVersion" : 1,
+    "passTypeIdentifier":"pass.sa.gov.fg.testPass",
+    "serialNumber":"nmyuxofgna",
+    "teamIdentifier":"YVY69NAPU2",
+    "webServiceURL" : "https://example.com/passes/",
+    "authenticationToken" : "vxwxd7J8AlNNFPS8k0a0FfUFtq0ewzFdc",
+    "locations" : [
+        {
+            "longitude" : -122.3748889,
+            "latitude" : 37.6189722
+        },
+        {
+            "longitude" : -122.03118,
+            "latitude" : 37.33182
+        }
+    ],
+    "barcode" : {
+        "message" : "MATMSG:TO:will@iam.com;SUB:Check out these jams;BODY: Hi Will,%0AI thought you might like to see this.Thanks!",
+        "format" : "PKBarcodeFormatQR",
+        "messageEncoding" : "iso-8859-1"
+    },
+    "organizationName" : "Ejada Systems LTD.",
+    "description" : "Ejada Digital ID",
+    "logoText" : "",
+    "backgroundColor" : "rgb(31, 87, 148)",
+    "foregroundColor": "rgb(255,255,255)",
+    "labelColor": "rgb(255,255,255)",
+    "stripColor": "rgb(32,182,122)",
+    
+    "generic" : {
+        "primaryFields" : [
+            {
+                "key" : "member",
+                "label" : "Technical Track Leader",
+                "value" : "كريم محمد\r\nKarim Yousef"
+            }
+        ],
+        "secondaryFields" : [
+            {
+                "key" : "subtitle2",
+                "label" : "Email:",
+                "value" : "kyousef@ejada.com",
+                "textAlignment" : "PKTextAlignmentLeft"
+            }
+        ],
+        "auxiliaryFields" : [
+            
+            {
+                "key" : "level",
+                "label" : "Mobile(KSA)",
+                "value" : "+966 55555 5555"
+            },
+            {
+                "key" : "favorite",
+                "label" : "Mobile(EGP)",
+                "value" : "+02 1099999999",
+                "textAlignment" : "PKTextAlignmentLeft"
+            }
+        ],
+        "backFields" : [
+            
+            {
+                "label" : "Name ",
+                "key" : "subtitle3",
+                "value" : "كريم محمد يوسف\r\nKarim M. Yousef"
+            },
+            {
+                "label" : "Role:",
+                "key" : "subtitle4",
+                "value" : "Technical Track Leader"
+            },
+            {
+                "label" : "Mobile: ",
+                "key" : "subtitle5",
+                "value" : "(KSA): +966 58266 6962\r\n(EGY): +02 12345 1234"
+            },
+            {
+                "label" : "Email:",
+                "key" : "subtitle6",
+                "value" : "kyousef@ejada.com"
+            },
+            {
+                "label" : "Tel:",
+                "key" : "subtitle7",
+                "value" : "+966 114722277 Ext. 88-533"
+            },
+            {
+                "label" : "P.O Box:",
+                "key" : "subtitle8",
+                "value" : "55471, Riyadh 11534"
+            }
+        ]
+    }
+}
