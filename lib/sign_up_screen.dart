@@ -54,19 +54,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   /// aad_OAuth
   void login(bool redirect) async {
-    //config.webUseRedirect = redirect;
-    //final result = await oauth.login();
-    // result.fold(
-    //       (l) => showError(l.toString()),
-    //       (r) async {
-    //         String token = r.accessToken!;
-    //         log("kkkkk ${r.accessToken}");
-    //         MSGraphAPI graphAPI = MSGraphAPI(token);
-    //
-    //         User userInfo = await graphAPI.me.fetchUserInfo();
-    //     Navigator.of(context).push(MaterialPageRoute(builder: (context) => ResultScreen(userInfo: userInfo,)));
-    //   },
-    // );
+    config.webUseRedirect = redirect;
+    final result = await oauth.login();
+    result.fold(
+          (l) => showError(l.toString()),
+          (r) async {
+            String token = r.accessToken!;
+            log("kkkkk ${r.accessToken}");
+            MSGraphAPI graphAPI = MSGraphAPI(token);
+
+            User userInfo = await graphAPI.me.fetchUserInfo();
+        Navigator.of(context).push(MaterialPageRoute(builder: (context) => ResultScreen(userInfo: userInfo,)));
+      },
+    );
   }
 
 Dio dio = Dio();
