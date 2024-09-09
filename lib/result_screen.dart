@@ -148,7 +148,7 @@ class _ResultScreenState extends State<ResultScreen> {
     final thumbnail2Png = await rootBundle.load('assets/passes/thumbnail@2x.png');
 
     // Create an archive and add the files
-    final archive = Archive()`1
+    final archive = Archive()
       ..addFile(ArchiveFile('manifest.json', manifestJson.lengthInBytes, manifestJson.buffer.asUint8List()))
       ..addFile(ArchiveFile('signature', signatureJson.lengthInBytes, signatureJson.buffer.asUint8List()))
       ..addFile(ArchiveFile('pass.json', passJson.lengthInBytes, passJson.buffer.asUint8List()))
