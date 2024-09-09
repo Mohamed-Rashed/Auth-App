@@ -43,6 +43,7 @@ dependencies:
   share_plus:
   path_provider:
   flutter_wallet_card: ^3.0.4
+  archive: ^3.1.2
 
 dev_dependencies:
   flutter_test:
@@ -69,6 +70,15 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/passes/
+    - assets/passes/pass.json
+    - assets/passes/background.png
+    - assets/passes/background@2x.png
+    - assets/passes/icon.png
+    - assets/passes/icon@2x.png
+    - assets/passes/logo.png
+    - assets/passes/logo@2x.png
+    - assets/passes/thumbnail.png
+    - assets/passes/thumbnail@2x.png
   # assets:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg

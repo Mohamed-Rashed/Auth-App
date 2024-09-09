@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:untitled5/sign_up_screen.dart';
 
 
-void main() => runApp(MyApp());
+void main(){
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(MyApp());
+}
 
 class MyApp extends StatelessWidget {
   @override

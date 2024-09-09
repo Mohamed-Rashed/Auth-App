@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:add_to_google_wallet/widgets/add_to_google_wallet_button.dart';
 import 'package:add_to_wallet/widgets/add_to_wallet_button.dart';
+import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:microsoft_graph_api/models/user/user_model.dart';
@@ -35,15 +36,58 @@ class _ResultScreenState extends State<ResultScreen> {
   @override
   void initState() {
     super.initState();
-    generateManifest();
+    //generatePkPass();
+    initPlatformState();
+   // generateWalletPassFromPath();
+   // createPkpass();
+    //modifyPrimaryFieldLabel();
   }
 
-  Future<void> generateManifest() async {
+  Future<void> modifyPrimaryFieldLabel() async {
+    try {
+      // Load the JSON file from assets
+      String fileContent = await rootBundle.loadString('assets/passes/pass.json');
+
+      // Parse the JSON content into a Dart Map
+      Map<String, dynamic> jsonData = jsonDecode(fileContent);
+
+      // Modify the label of primaryFields[0]
+      jsonData['generic']['primaryFields'][0]['label'] = widget.userInfo.jobTitle;
+      jsonData['generic']['primaryFields'][0]['value'] = widget.userInfo.displayName;
+      jsonData['generic']['secondaryFields'][0]['value'] = widget.userInfo.mail;
+      jsonData['generic']['auxiliaryFields'][1]['value'] = widget.userInfo.mobilePhone;
+      jsonData['generic']['auxiliaryFields'][0]['value'] = widget.userInfo.businessPhones ?? "";
+      jsonData['generic']['backFields'][0]['value'] = widget.userInfo.displayName ?? "";
+      jsonData['generic']['backFields'][1]['value'] = widget.userInfo.jobTitle ?? "";
+      jsonData['generic']['backFields'][2]['value'] =
+          "(KSA): ${widget.userInfo.businessPhones}\r\n(EGY): ${widget.userInfo.mobilePhone}";
+
+      jsonData['generic']['backFields'][3]['value'] = widget.userInfo.mail;
+
+      // Convert the updated data back to JSON
+      String updatedJsonContent = jsonEncode(jsonData);
+
+      // Save the updated JSON content to the app's local directory (as assets are read-only)
+      final directory = await getApplicationDocumentsDirectory();
+      final filePath = '${directory.path}/updated_pass.json';
+      final file = File(filePath);
+
+      await file.writeAsString(updatedJsonContent);
+
+      print("Successfully updated and saved the file at $filePath.");
+      //computeAssetSHA1(filePath);
+      generateManifest(passPath : filePath);
+
+    } catch (e) {
+      print("Error occurred: $e");
+    }
+  }
+
+  Future<void> generateManifest({required String passPath}) async {
     final assetDirectoryPath = 'assets/passes';
 
     // Get the list of files in the assets/passes directory
     final manifest = <String, String>{};
-
     // List of files to include in the manifest
     final fileNames = [
       'pass.json',
@@ -53,13 +97,18 @@ class _ResultScreenState extends State<ResultScreen> {
       'icon@2x.png',
       'logo.png',
       'logo@2x.png',
+      'thumbnail.png',
+      'thumbnail@2x.png',
       // Add other filenames as needed
     ];
-
+    ByteData? fileBytes;
     for (var fileName in fileNames) {
+      if(fileName == 'pass.json'){
+        fileBytes = await rootBundle.load('$passPath');
+      }else{
+        fileBytes = await rootBundle.load('$assetDirectoryPath/$fileName');
+      }
       // Load the file from assets
-      final fileBytes = await rootBundle.load('$assetDirectoryPath/$fileName');
-
       // Calculate the SHA-1 hash of the file
       final sha1Hash = sha1.convert(fileBytes.buffer.asUint8List()).toString();
 
@@ -78,8 +127,69 @@ class _ResultScreenState extends State<ResultScreen> {
     final manifestFile = File('${directory.path}/manifest.json');
     await manifestFile.writeAsString(manifestJson, flush: true);
 
+    print("kkkkkkkk ${manifestJson}");
+    //API();
+
     print('manifest.json generated successfully in ${directory.path}.');
   }
+
+  Future<File> generatePkPass() async {
+    // Load the files from the assets
+    final manifestJson = await rootBundle.load('assets/passes/manifest.json');
+    final signatureJson = await rootBundle.load('assets/passes/signature');
+    final passJson = await rootBundle.load('assets/passes/pass.json');
+    final backgroundPng = await rootBundle.load('assets/passes/background.png');
+    final background2Png = await rootBundle.load('assets/passes/background@2x.png');
+    final iconPng = await rootBundle.load('assets/passes/icon.png');
+    final icon2Png = await rootBundle.load('assets/passes/icon@2x.png');
+    final logoPng = await rootBundle.load('assets/passes/logo.png');
+    final logo2Png = await rootBundle.load('assets/passes/logo@2x.png');
+    final thumbnailPng = await rootBundle.load('assets/passes/thumbnail.png');
+    final thumbnail2Png = await rootBundle.load('assets/passes/thumbnail@2x.png');
+
+    // Create an archive and add the files
+    final archive = Archive()`1
+      ..addFile(ArchiveFile('manifest.json', manifestJson.lengthInBytes, manifestJson.buffer.asUint8List()))
+      ..addFile(ArchiveFile('signature', signatureJson.lengthInBytes, signatureJson.buffer.asUint8List()))
+      ..addFile(ArchiveFile('pass.json', passJson.lengthInBytes, passJson.buffer.asUint8List()))
+      ..addFile(ArchiveFile('background.png', backgroundPng.lengthInBytes, backgroundPng.buffer.asUint8List()))
+      ..addFile(ArchiveFile('background@2x.png', background2Png.lengthInBytes, background2Png.buffer.asUint8List()))
+      ..addFile(ArchiveFile('icon.png', iconPng.lengthInBytes, iconPng.buffer.asUint8List()))
+      ..addFile(ArchiveFile('icon@2x.png', icon2Png.lengthInBytes, icon2Png.buffer.asUint8List()))
+      ..addFile(ArchiveFile('logo.png', logoPng.lengthInBytes, logoPng.buffer.asUint8List()))
+      ..addFile(ArchiveFile('logo@2x.png', logo2Png.lengthInBytes, logo2Png.buffer.asUint8List()))
+      ..addFile(ArchiveFile('thumbnail.png', thumbnailPng.lengthInBytes, thumbnailPng.buffer.asUint8List()))
+      ..addFile(ArchiveFile('thumbnail@2x.png', thumbnail2Png.lengthInBytes, thumbnail2Png.buffer.asUint8List()));
+
+    // Encode the archive as a .zip file
+    final zipEncoder = ZipEncoder();
+    final zipData = zipEncoder.encode(archive);
+
+    // Get the temporary directory to save the .pkpass file
+    final tempDir = await getTemporaryDirectory();
+    final pkpassFile = File('${tempDir.path}/pass.pkpass');
+
+    // Write the zip data to the file
+    await pkpassFile.writeAsBytes(zipData!);
+    print("kkkkk ${pkpassFile.path}");
+
+    initPlatformState();
+
+    return pkpassFile;
+  }
+
+  Future<String> computeAssetSHA1(String assetPath) async {
+    // Load the asset data as bytes
+    final ByteData data = await rootBundle.load(assetPath);
+    final List<int> bytes = data.buffer.asUint8List();
+
+    // Compute the SHA-1 hash
+    final digest = sha1.convert(bytes);
+    print("pass.json SHA-1 : $digest");
+    return digest.toString();
+  }
+
+
 
   Future<void> initPlatformState() async {
     final pass = await passProvider();
@@ -238,25 +348,25 @@ class _ResultScreenState extends State<ResultScreen> {
                 print("🎊Add to Wallet button Pressed!🎊");
               },
             ),
-          /*InkWell(
-            onTap: () {
-              generateWalletPassFromPath();
-            },
-            child: Container(
-              height: 50,
-              width: 200,
-              decoration: BoxDecoration(
-                color: Colors.red,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Center(
-                child: Text(
-                  "Add To Apple Wallet",
-                  style: TextStyle(color: Colors.white, fontSize: 15),
-                ),
-              ),
-            ),
-          ),*/
+          // InkWell(
+          //   onTap: () {
+          //     generateWalletPassFromPath();
+          //   },
+          //   child: Container(
+          //     height: 50,
+          //     width: 200,
+          //     decoration: BoxDecoration(
+          //       color: Colors.red,
+          //       borderRadius: BorderRadius.circular(10),
+          //     ),
+          //     child: const Center(
+          //       child: Text(
+          //         "Add To Apple Wallet",
+          //         style: TextStyle(color: Colors.white, fontSize: 15),
+          //       ),
+          //     ),
+          //   ),
+          // ),
           const SizedBox(
             height: 20,
           ),

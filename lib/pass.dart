@@ -1,6 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
-
-import 'package:flutter/services.dart';
+import 'package:archive/archive.dart';
+import 'package:flutter/services.dart' show Color, rootBundle;
 import 'package:flutter_wallet_card/core/passkit.dart';
 import 'package:flutter_wallet_card/flutter_wallet_card.dart';
 import 'package:flutter_wallet_card/models/PasskitBarcode.dart';
@@ -60,10 +61,12 @@ void generateWalletPassFromPath() async {
   final fileThumbnail2x = File('${directory.path}/thumbnail@2x.png');
   final examplePassThumbnail2x = await rootBundle.load('assets/passes/thumbnail@2x.png');
   final writtenThumbnail2x = await fileThumbnail2x.writeAsBytes(examplePassThumbnail2x.buffer.asUint8List());
-
+  final String response = await rootBundle.loadString('assets/passes/pass.json');
+  final data = await json.decode(response);
+  final xxx = PasskitPass.fromJson(data);
   final passkitGenerated = await FlutterWalletCard.generatePass(
     id: 'digitalIDPasss',
-    pass: examplePass, // class instance
+    pass: xxx, // class instance
     signature: writtenSignature,
     manifest: writtenManifest,
 
@@ -73,13 +76,76 @@ void generateWalletPassFromPath() async {
     thumbnailImage: PasskitImage(image:writtenThumbnail, image2x:writtenThumbnail2x),
 
   );
-  final passkitFile = passkitGenerated.passkitFile;
-  print("passkitFile ----- ${passkitFile}");
-  await FlutterWalletCard.addPasskit(passkitFile);
 
+  final passkitFile = passkitGenerated.passkitFile;
+  print("kkkkk ${passkitFile.file.path}");
+  final x = await FlutterWalletCard.addPasskit(passkitFile);
+  print("kkkkk ${x}");
+}
+
+
+/*Future<void> generateWalletPass() async {
+  // Load the pass.json file from the assets
+  final passJson = await rootBundle.loadString('assets/pass.json');
+
+  // Load other assets if necessary (like images)
+  final icon = await rootBundle.load('assets/icon.png');
+  final logo = await rootBundle.load('assets/logo.png');
+
+  // Create the WalletPass object using the flutter_wallet_card package
+  final walletPass = WalletPass.fromJson(passJson);
+
+  // Add images and other necessary assets
+  walletPass.icon = icon.buffer.asUint8List();
+  walletPass.logo = logo.buffer.asUint8List();
+
+  // Optionally, you can sign the pass if needed using a certificate (usually required for production)
+  // walletPass.sign(passTypeId, teamId, certificatePath, certificatePassword);
+
+  // Save the .pkpass file to the device's file system
+  final directory = await getApplicationDocumentsDirectory();
+  final filePath = '${directory.path}/pass.pkpass';
+  final passFile = File(filePath);
+  await passFile.writeAsBytes(walletPass.toPkPass());
+
+  print('Wallet pass generated and saved to $filePath');
+}*/
+
+Future<void> createPkpass() async {
+  final assetDirectoryPath = 'assets';
+  final pass = <String, String>{};
+  final encoder = ZipEncoder();
+  final archive = Archive();
+
+  final files = [
+    'pass.json',
+    'background.png',
+    'background@2x.png',
+    'icon.png',
+    'icon@2x.png',
+    'logo.png',
+    'logo@2x.png',
+    'thumbnail.png',
+    'thumbnail@2x.png'
+    // Add other file names as needed
+  ];
+
+
+  for (var fileName in files) {
+    // Load the file from assets
+    final fileBytes = await rootBundle.load('$assetDirectoryPath/$fileName');
+    archive.addFile(ArchiveFile(fileName, fileBytes.elementSizeInBytes, fileBytes));
+  }
+  final directory = await getApplicationDocumentsDirectory();
+
+  final zipData = encoder.encode(archive);
+  final pkpassFile = File('${directory.path}/test.pkpass');
+  await pkpassFile.writeAsBytes(zipData!);
+  print('Pass generated successfully at: ${pkpassFile.path}');
 }
 
 //
+
 final examplePass = PasskitPass(
   description : "Apple Event Ticket",
   formatVersion : 1,
@@ -89,6 +155,7 @@ final examplePass = PasskitPass(
   teamIdentifier : "YVY69NAPU2",
   webServiceURL : "https://example.com/passes/",
   authenticationToken : "vxwxd7J8AlNNFPS8k0a0FfUFtq0ewzFdc",
+  appLaunchURL: "ewewewewewe",
   barcodes: [
     PasskitBarcode(
         message: "123456789",
@@ -133,5 +200,4 @@ final examplePass = PasskitPass(
         latitude : 37.33182
     ),
   ],
-  relevantDate : "2026-12-08T13:00-08:00",
 );
