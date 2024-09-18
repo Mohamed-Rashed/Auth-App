@@ -60,11 +60,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
           (l) => showError(l.toString()),
           (r) async {
             String token = r.accessToken!;
-            log("kkkkk ${r.accessToken}");
             MSGraphAPI graphAPI = MSGraphAPI(token);
 
             User userInfo = await graphAPI.me.fetchUserInfo();
-        Navigator.of(context).push(MaterialPageRoute(builder: (context) => ResultScreen(userInfo: userInfo,)));
+            print("kkkk${userInfo}");
+            ImageProvider<Object>? userInfo2 = await graphAPI.me.fetchUserProfileImage('504x504');
+
+        Navigator.of(context).push(MaterialPageRoute(builder: (context) => ResultScreen(userInfo: userInfo,userImage: userInfo2)));
       },
     );
   }

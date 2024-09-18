@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:add_to_google_wallet/widgets/add_to_google_wallet_button.dart';
 import 'package:add_to_wallet/widgets/add_to_wallet_button.dart';
@@ -23,8 +25,10 @@ const String _issuerEmail = 'mohamedrashed88@gmail.com';
 
 class ResultScreen extends StatefulWidget {
   final User userInfo;
+  final ImageProvider<Object>? userImage;
 
-  const ResultScreen({super.key, required this.userInfo});
+  const ResultScreen(
+      {super.key, required this.userInfo, required this.userImage});
 
   @override
   State<ResultScreen> createState() => _ResultScreenState();
@@ -33,32 +37,74 @@ class ResultScreen extends StatefulWidget {
 class _ResultScreenState extends State<ResultScreen> {
   bool _passLoaded = false;
   List<int> _pkPassData = [];
+
   @override
   void initState() {
     super.initState();
     //generatePkPass();
-    initPlatformState();
-   // generateWalletPassFromPath();
-   // createPkpass();
-    //modifyPrimaryFieldLabel();
+    //initPlatformState();
+    // generateWalletPassFromPath();
+    // createPkpass();
+    modifyPrimaryFieldLabel();
   }
+
+  Future<ui.Image> loadImage(ImageProvider imageProvider) async {
+    final Completer<ui.Image> completer = Completer<ui.Image>();
+    final ImageStream stream = imageProvider.resolve(const ImageConfiguration());
+    final ImageStreamListener listener = ImageStreamListener(
+          (ImageInfo info, bool synchronousCall) {
+        completer.complete(info.image);
+      },
+      onError: (dynamic error, StackTrace? stackTrace) {
+        completer.completeError(error);
+      },
+    );
+    stream.addListener(listener);
+    return completer.future;
+  }
+  Future<ByteData?> imageToByteData(ui.Image image) async {
+    return await image.toByteData(format: ui.ImageByteFormat.png);
+  }
+
+
+  Future<File> saveImage(ByteData byteData) async {
+    final buffer = byteData.buffer;
+    final directory = await getApplicationDocumentsDirectory(); // Or any path
+    final filePath = '${directory.path}/image.png';
+    File file = File(filePath);
+
+    print("kkkkk ${file.path}");
+
+    return await file.writeAsBytes(
+      buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes),
+    );
+  }
+
+
 
   Future<void> modifyPrimaryFieldLabel() async {
     try {
       // Load the JSON file from assets
-      String fileContent = await rootBundle.loadString('assets/passes/pass.json');
+      String fileContent =
+          await rootBundle.loadString('assets/passes/pass.json');
 
       // Parse the JSON content into a Dart Map
       Map<String, dynamic> jsonData = jsonDecode(fileContent);
 
       // Modify the label of primaryFields[0]
-      jsonData['generic']['primaryFields'][0]['label'] = widget.userInfo.jobTitle;
-      jsonData['generic']['primaryFields'][0]['value'] = widget.userInfo.displayName;
+      jsonData['generic']['primaryFields'][0]['label'] =
+          widget.userInfo.jobTitle;
+      jsonData['generic']['primaryFields'][0]['value'] =
+          widget.userInfo.displayName;
       jsonData['generic']['secondaryFields'][0]['value'] = widget.userInfo.mail;
-      jsonData['generic']['auxiliaryFields'][1]['value'] = widget.userInfo.mobilePhone;
-      jsonData['generic']['auxiliaryFields'][0]['value'] = widget.userInfo.businessPhones ?? "";
-      jsonData['generic']['backFields'][0]['value'] = widget.userInfo.displayName ?? "";
-      jsonData['generic']['backFields'][1]['value'] = widget.userInfo.jobTitle ?? "";
+      jsonData['generic']['auxiliaryFields'][1]['value'] =
+          widget.userInfo.mobilePhone;
+      jsonData['generic']['auxiliaryFields'][0]['value'] =
+          widget.userInfo.businessPhones ?? "";
+      jsonData['generic']['backFields'][0]['value'] =
+          widget.userInfo.displayName ?? "";
+      jsonData['generic']['backFields'][1]['value'] =
+          widget.userInfo.jobTitle ?? "";
       jsonData['generic']['backFields'][2]['value'] =
           "(KSA): ${widget.userInfo.businessPhones}\r\n(EGY): ${widget.userInfo.mobilePhone}";
 
@@ -76,8 +122,7 @@ class _ResultScreenState extends State<ResultScreen> {
 
       print("Successfully updated and saved the file at $filePath.");
       //computeAssetSHA1(filePath);
-      generateManifest(passPath : filePath);
-
+      generateManifest(passPath: filePath);
     } catch (e) {
       print("Error occurred: $e");
     }
@@ -103,9 +148,18 @@ class _ResultScreenState extends State<ResultScreen> {
     ];
     ByteData? fileBytes;
     for (var fileName in fileNames) {
-      if(fileName == 'pass.json'){
+
+      if (fileName == 'pass.json') {
         fileBytes = await rootBundle.load('$passPath');
-      }else{
+      } else if(fileName == 'thumbnail.png' && widget.userImage != null){
+        ui.Image image = await loadImage(widget.userImage!);
+        ByteData? byteData = await imageToByteData(image);
+        if (byteData == null) return null;
+
+        // Save ByteData as a file
+        File file = await saveImage(byteData);
+        fileBytes = await rootBundle.load('${file.path}');
+      } else{
         fileBytes = await rootBundle.load('$assetDirectoryPath/$fileName');
       }
       // Load the file from assets
@@ -139,27 +193,40 @@ class _ResultScreenState extends State<ResultScreen> {
     final signatureJson = await rootBundle.load('assets/passes/signature');
     final passJson = await rootBundle.load('assets/passes/pass.json');
     final backgroundPng = await rootBundle.load('assets/passes/background.png');
-    final background2Png = await rootBundle.load('assets/passes/background@2x.png');
+    final background2Png =
+        await rootBundle.load('assets/passes/background@2x.png');
     final iconPng = await rootBundle.load('assets/passes/icon.png');
     final icon2Png = await rootBundle.load('assets/passes/icon@2x.png');
     final logoPng = await rootBundle.load('assets/passes/logo.png');
     final logo2Png = await rootBundle.load('assets/passes/logo@2x.png');
     final thumbnailPng = await rootBundle.load('assets/passes/thumbnail.png');
-    final thumbnail2Png = await rootBundle.load('assets/passes/thumbnail@2x.png');
+    final thumbnail2Png =
+        await rootBundle.load('assets/passes/thumbnail@2x.png');
 
     // Create an archive and add the files
     final archive = Archive()
-      ..addFile(ArchiveFile('manifest.json', manifestJson.lengthInBytes, manifestJson.buffer.asUint8List()))
-      ..addFile(ArchiveFile('signature', signatureJson.lengthInBytes, signatureJson.buffer.asUint8List()))
-      ..addFile(ArchiveFile('pass.json', passJson.lengthInBytes, passJson.buffer.asUint8List()))
-      ..addFile(ArchiveFile('background.png', backgroundPng.lengthInBytes, backgroundPng.buffer.asUint8List()))
-      ..addFile(ArchiveFile('background@2x.png', background2Png.lengthInBytes, background2Png.buffer.asUint8List()))
-      ..addFile(ArchiveFile('icon.png', iconPng.lengthInBytes, iconPng.buffer.asUint8List()))
-      ..addFile(ArchiveFile('icon@2x.png', icon2Png.lengthInBytes, icon2Png.buffer.asUint8List()))
-      ..addFile(ArchiveFile('logo.png', logoPng.lengthInBytes, logoPng.buffer.asUint8List()))
-      ..addFile(ArchiveFile('logo@2x.png', logo2Png.lengthInBytes, logo2Png.buffer.asUint8List()))
-      ..addFile(ArchiveFile('thumbnail.png', thumbnailPng.lengthInBytes, thumbnailPng.buffer.asUint8List()))
-      ..addFile(ArchiveFile('thumbnail@2x.png', thumbnail2Png.lengthInBytes, thumbnail2Png.buffer.asUint8List()));
+      ..addFile(ArchiveFile('manifest.json', manifestJson.lengthInBytes,
+          manifestJson.buffer.asUint8List()))
+      ..addFile(ArchiveFile('signature', signatureJson.lengthInBytes,
+          signatureJson.buffer.asUint8List()))
+      ..addFile(ArchiveFile(
+          'pass.json', passJson.lengthInBytes, passJson.buffer.asUint8List()))
+      ..addFile(ArchiveFile('background.png', backgroundPng.lengthInBytes,
+          backgroundPng.buffer.asUint8List()))
+      ..addFile(ArchiveFile('background@2x.png', background2Png.lengthInBytes,
+          background2Png.buffer.asUint8List()))
+      ..addFile(ArchiveFile(
+          'icon.png', iconPng.lengthInBytes, iconPng.buffer.asUint8List()))
+      ..addFile(ArchiveFile(
+          'icon@2x.png', icon2Png.lengthInBytes, icon2Png.buffer.asUint8List()))
+      ..addFile(ArchiveFile(
+          'logo.png', logoPng.lengthInBytes, logoPng.buffer.asUint8List()))
+      ..addFile(ArchiveFile(
+          'logo@2x.png', logo2Png.lengthInBytes, logo2Png.buffer.asUint8List()))
+      ..addFile(ArchiveFile('thumbnail.png', thumbnailPng.lengthInBytes,
+          thumbnailPng.buffer.asUint8List()))
+      ..addFile(ArchiveFile('thumbnail@2x.png', thumbnail2Png.lengthInBytes,
+          thumbnail2Png.buffer.asUint8List()));
 
     // Encode the archive as a .zip file
     final zipEncoder = ZipEncoder();
@@ -189,8 +256,6 @@ class _ResultScreenState extends State<ResultScreen> {
     return digest.toString();
   }
 
-
-
   Future<void> initPlatformState() async {
     final pass = await passProvider();
 
@@ -208,6 +273,15 @@ class _ResultScreenState extends State<ResultScreen> {
       appBar: AppBar(),
       body: Column(
         children: <Widget>[
+          widget.userImage != null ?  Container(
+            height: 100,
+            width: 100,
+            decoration: BoxDecoration(
+                color: Colors.green,
+                image: DecorationImage(
+                    image: widget.userImage! // <--- .image added here
+                    )),
+          ) : Container(),
           Container(
             margin: const EdgeInsets.only(
                 left: 30, top: 100, right: 30, bottom: 70),
